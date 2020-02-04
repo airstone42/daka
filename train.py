@@ -37,14 +37,14 @@ def train():
     np.random.shuffle(r_full)
     xl_full, yl_full = np.array([x['image'] for x in l_full]), np.array([int(x['number']) for x in l_full])
     xr_full, yr_full = np.array([x['image'] for x in r_full]), np.array([int(x['number']) for x in r_full])
-    xl_train, yl_train = xl_full[:int(0.4 * len(xl_full)) + 1], yl_full[:int(0.4 * len(yl_full)) + 1]
-    xr_train, yr_train = xr_full[:int(0.4 * len(xr_full)) + 1], yr_full[:int(0.4 * len(yr_full)) + 1]
-    xl_valid, yl_valid = xl_full[int(0.4 * len(xl_full)):int(0.8 * len(xl_full))], yl_full[int(0.4 * len(yl_full)):int(
-        0.8 * len(yl_full))]
-    xr_valid, yr_valid = xr_full[int(0.4 * len(xr_full)):int(0.8 * len(xr_full))], yr_full[int(0.4 * len(yr_full)):int(
-        0.8 * len(yr_full))]
-    xl_test, yl_test = xl_full[int(0.8 * len(xl_full)):], yl_full[int(0.8 * len(yl_full)):]
-    xr_test, yr_test = xr_full[int(0.8 * len(xr_full)):], yr_full[int(0.8 * len(yr_full)):]
+    xl_train, yl_train = xl_full[:int(len(xl_full) / 3)], yl_full[:int(len(yl_full) / 3)]
+    xr_train, yr_train = xr_full[:int(len(xr_full) / 3)], yr_full[:int(len(yr_full) / 3)]
+    xl_valid, yl_valid = xl_full[int(len(xl_full) / 3):int(len(xl_full) / 3 * 2)], yl_full[int(len(yl_full) / 3):int(
+        len(yl_full) / 3 * 2)]
+    xr_valid, yr_valid = xr_full[int(len(xr_full) / 3):int(len(xr_full) / 3 * 2)], yr_full[int(len(yr_full) / 3):int(
+        len(yr_full) / 3 * 2)]
+    xl_test, yl_test = xl_full[int(len(xl_full) / 3 * 2):], yl_full[int(len(yl_full) / 3 * 2):]
+    xr_test, yr_test = xr_full[int(len(xr_full) / 3 * 2):], yr_full[int(len(yr_full) / 3 * 2):]
 
     pass
 

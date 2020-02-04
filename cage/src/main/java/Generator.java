@@ -15,7 +15,7 @@ public class Generator {
 
     public static void main(String[] args) {
         Cage cage = new GCage();
-        IntStream.range(1, 10000).forEach(i -> {
+        IntStream.range(0, 90000).forEach(i -> {
             Runnable gen = () -> {
                 try {
                     generate(cage);
