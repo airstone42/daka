@@ -1,0 +1,11 @@
+__pycache__
+.env
+.idea
+.vscode
+target
+
+/cage/images/*
+/data/*
+
+!/cage/images/.gitkeep
+!/data/.gitkeep
