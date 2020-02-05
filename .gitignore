@@ -6,6 +6,7 @@ target
 
 /cage/images/*
 /data/*
+config.yml
 
 !/cage/images/.gitkeep
 !/data/.gitkeep
