@@ -5,9 +5,11 @@ import re
 import cv2
 import keras
 import numpy as np
+import pandas as pd
 
 data_path = 'cage/images/'
 model_path = 'data/model.h5'
+num_path = 'data/number.csv'
 
 
 def extract() -> list:
@@ -29,7 +31,7 @@ def extract() -> list:
     return data
 
 
-def train():
+def load() -> ((np.ndarray, np.ndarray), (np.ndarray, np.ndarray), (np.ndarray, np.ndarray)):
     full = extract()
     np.random.shuffle(full)
     x_full, y_full = np.array([x['image'] for x in full]), np.array([int(x['number']) for x in full])
@@ -37,7 +39,7 @@ def train():
     x_valid, y_valid = x_full[int(len(x_full) / 3):int(len(x_full) / 3 * 2)], y_full[int(len(y_full) / 3):int(
         len(y_full) / 3 * 2)]
     x_test, y_test = x_full[int(len(x_full) / 3 * 2):], y_full[int(len(y_full) / 3 * 2):]
-    
+
     x_mean = x_train.mean(axis=0, keepdims=True)
     x_std = x_train.std(axis=0, keepdims=True) + 1e-7
     x_train = (x_train - x_mean) / x_std
@@ -46,6 +48,18 @@ def train():
     x_train = x_train[..., np.newaxis]
     x_valid = x_valid[..., np.newaxis]
     x_test = x_test[..., np.newaxis]
+
+    if not os.path.exists(num_path):
+        nums = [{'mean': x_mean.tolist(), 'std': x_std.tolist()}]
+        with open(num_path, 'xt', encoding='utf-8', newline='\n') as f:
+            pd.DataFrame(nums).to_csv(f, index=False, line_terminator='\n')
+
+    return (x_train, y_train), (x_valid, y_valid), (x_test, y_test)
+
+
+def train():
+    full = load()
+    (x_train, y_train), (x_valid, y_valid), (x_test, y_test) = full[0], full[1], full[2]
 
     if os.path.exists(model_path):
         model = keras.models.load_model(model_path)
@@ -70,8 +84,8 @@ def train():
     ])
     model.compile(loss='sparse_categorical_crossentropy', optimizer='sgd', metrics=['accuracy'])
     model.fit(x_train, y_train, epochs=10, validation_data=(x_valid, y_valid))
-    print(model.evaluate(x_test, y_test))
     model.save(model_path)
+    print(model.evaluate(x_test, y_test))
 
 
 if __name__ == '__main__':
