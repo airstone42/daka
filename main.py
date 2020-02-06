@@ -12,20 +12,20 @@ import requests
 import yaml
 from bs4 import BeautifulSoup
 
-config_path = 'config.yml'
-img_path = 'data/'
-model_path = 'data/model.h5'
-number_path = 'data/number.csv'
+CONF_PATH = 'config.yml'
+IMG_PATH = 'data/'
+MODEL_PATH = 'data/model.h5'
+NUM_PATH = 'data/number.csv'
 
-dk_url = 'https://dk.shmtu.edu.cn/'
-cas_url = 'https://cas.shmtu.edu.cn/'
-captcha_url = cas_url + 'cas/captcha'
-checkin_url = dk_url + 'checkin'
+DK_URL = 'https://dk.shmtu.edu.cn/'
+CAS_URL = 'https://cas.shmtu.edu.cn/'
+CAPTCHA_URL = CAS_URL + 'cas/captcha'
+CHECKIN_URL = DK_URL + 'checkin'
 
-df = pd.read_csv(number_path)
+df = pd.read_csv(NUM_PATH)
 x_mean = np.array(ast.literal_eval(df['mean'][0]))
 x_std = np.array(ast.literal_eval(df['std'][0]))
-model = keras.models.load_model(model_path)
+model = keras.models.load_model(MODEL_PATH)
 
 
 def recognize(img) -> str:
@@ -37,7 +37,7 @@ def recognize(img) -> str:
 
 def login(s: requests.Session, r: requests.Response, config: dict) -> (bool, requests.Response):
     soup = BeautifulSoup(r.content, 'lxml')
-    captcha = s.get(captcha_url)
+    captcha = s.get(CAPTCHA_URL)
 
     array = np.frombuffer(captcha.content, np.uint8)
     img = cv2.imdecode(array, cv2.IMREAD_GRAYSCALE)
@@ -59,7 +59,7 @@ def login(s: requests.Session, r: requests.Response, config: dict) -> (bool, req
 
 
 def checkin(s: requests.Session, r: requests.Response, config: dict) -> bool:
-    if r.url != dk_url:
+    if r.url != DK_URL:
         return False
 
     soup = BeautifulSoup(r.content, 'lxml')
@@ -77,7 +77,7 @@ def checkin(s: requests.Session, r: requests.Response, config: dict) -> bool:
             'rylx': config['contacted'],
             'status': config['health'],
         }
-        post = s.post(checkin_url, data=data)
+        post = s.post(CHECKIN_URL, data=data)
         logging.info('Checkin...')
         soup = BeautifulSoup(post.content, 'lxml')
         if 'Health report already submitted' in str(soup.find('div', attrs={'class': 'form-group'})):
@@ -89,18 +89,18 @@ def checkin(s: requests.Session, r: requests.Response, config: dict) -> bool:
 
 
 def main():
-    if not os.path.exists(config_path):
+    if not os.path.exists(CONF_PATH):
         print('Config does not exist!')
-    with open(config_path, 'r') as f:
+    with open(CONF_PATH, 'r') as f:
         config = yaml.load(f, Loader=yaml.Loader)
         if not config['id'] and config['number']:
             print('Config incorrect!')
     error_count = 0
 
     s = requests.Session()
-    r = s.get(dk_url)
+    r = s.get(DK_URL)
 
-    if cas_url in r.url:
+    if CAS_URL in r.url:
         result, r = login(s, r, config)
         while not result and error_count < 5:
             result, r = login(s, r, config)
