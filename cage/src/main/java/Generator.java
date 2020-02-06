@@ -16,14 +16,13 @@ public class Generator {
     public static void main(String[] args) {
         Cage cage = new GCage();
         IntStream.range(0, 90000).forEach(i -> {
-            Runnable gen = () -> {
+            pool.execute(() -> {
                 try {
                     generate(cage);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-            };
-            pool.execute(gen);
+            });
         });
         pool.shutdown();
     }
