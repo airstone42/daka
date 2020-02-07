@@ -2,6 +2,8 @@
 
 一个用于自动登陆、每日打卡的简单工具。使用 CNN 训练模型，自动识别登陆页的验证码。
 
+![](https://cas.shmtu.edu.cn/cas/captcha)
+
 ## Dependencies
 
 ### Java
