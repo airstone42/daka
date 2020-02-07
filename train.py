@@ -8,66 +8,99 @@ import numpy as np
 import pandas as pd
 
 DATA_PATH = 'cage/images/'
-MODEL_PATH = 'data/model.h5'
-NUM_PATH = 'data/number.csv'
+LEFT_PATH = 'data/left.h5'
+RIGHT_PATH = 'data/right.h5'
+NUM_PATH = 'data/numbers.csv'
+
+DataSet = (np.ndarray, np.ndarray, np.ndarray)
 
 
-def extract() -> list:
-    data = []
-    pattern = r'(\d\d)_\w.*\.png'
+def extract() -> (list, list):
+    l_data, r_data = [], []
+    pattern = r'(\d)(\d)_\w.*\.png'
     for _, _, files in os.walk(DATA_PATH, topdown=False):
         for file in files:
             if 'png' not in file:
                 continue
             match = re.match(pattern, file)
-            if not match or len(match.groups()) != 1:
+            if not match or len(match.groups()) != 2:
                 continue
 
-            num = match.groups()[0]
+            l_num, r_num = match.groups()
             file = DATA_PATH + file
             img: np.ndarray = cv2.imread(file, cv2.IMREAD_GRAYSCALE)
-            data.append({'image': img, 'number': num})
+            _, width = img.shape
+            l_part: np.ndarray = img[..., :int(width / 2)]
+            r_part: np.ndarray = img[..., int(width / 2):]
+            l_data.append({'image': l_part, 'number': l_num})
+            r_data.append({'image': r_part, 'number': r_num})
 
-    return data
+    return l_data, r_data
 
 
-def load() -> ((np.ndarray, np.ndarray), (np.ndarray, np.ndarray), (np.ndarray, np.ndarray)):
-    full = extract()
-    np.random.shuffle(full)
-    x_full, y_full = np.array([x['image'] for x in full]), np.array([int(x['number']) for x in full])
-    x_train, y_train = x_full[:int(len(x_full) / 3)], y_full[:int(len(y_full) / 3)]
-    x_valid, y_valid = x_full[int(len(x_full) / 3):int(len(x_full) / 3 * 2)], y_full[int(len(y_full) / 3):int(
-        len(y_full) / 3 * 2)]
-    x_test, y_test = x_full[int(len(x_full) / 3 * 2):], y_full[int(len(y_full) / 3 * 2):]
+def load() -> (DataSet, DataSet):
+    l_full, r_full = extract()
+    np.random.shuffle(l_full)
+    np.random.shuffle(r_full)
+    xl_full, yl_full = np.array([x['image'] for x in l_full]), np.array([int(x['number']) for x in l_full])
+    xr_full, yr_full = np.array([x['image'] for x in r_full]), np.array([int(x['number']) for x in r_full])
 
-    x_mean = x_train.mean(axis=0, keepdims=True)
-    x_std = x_train.std(axis=0, keepdims=True) + 1e-7
-    x_train = (x_train - x_mean) / x_std
-    x_valid = (x_valid - x_mean) / x_std
-    x_test = (x_test - x_mean) / x_std
-    x_train = x_train[..., np.newaxis]
-    x_valid = x_valid[..., np.newaxis]
-    x_test = x_test[..., np.newaxis]
+    xl_train, yl_train = xl_full[:int(len(xl_full) / 3)], yl_full[:int(len(yl_full) / 3)]
+    xr_train, yr_train = xr_full[:int(len(xr_full) / 3)], yr_full[:int(len(yr_full) / 3)]
+    xl_valid, yl_valid = \
+        xl_full[int(len(xl_full) / 3):int(len(xl_full) / 3 * 2)], \
+        yl_full[int(len(yl_full) / 3):int(len(yl_full) / 3 * 2)]
+    xr_valid, yr_valid = \
+        xr_full[int(len(xr_full) / 3):int(len(xr_full) / 3 * 2)], \
+        yr_full[int(len(yr_full) / 3):int(len(yr_full) / 3 * 2)]
+    xl_test, yl_test = \
+        xl_full[int(len(xl_full) / 3 * 2):], \
+        yl_full[int(len(yl_full) / 3 * 2):]
+    xr_test, yr_test = \
+        xr_full[int(len(xr_full) / 3 * 2):], \
+        yr_full[int(len(yr_full) / 3 * 2):]
+
+    xl_mean, xr_mean = \
+        xl_train.mean(axis=0, keepdims=True), \
+        xr_train.mean(axis=0, keepdims=True)
+    xl_std, xr_std = \
+        xl_train.std(axis=0, keepdims=True) + 1e-7, \
+        xr_train.std(axis=0, keepdims=True) + 1e-7
+    xl_train, xr_train = (xl_train - xl_mean) / xl_std, (xr_train - xr_mean) / xr_std
+    xl_valid, xr_valid = (xl_valid - xl_mean) / xl_std, (xr_valid - xr_mean) / xr_std
+    xl_test, xr_test = (xl_test - xl_mean) / xl_std, (xr_test - xr_mean) / xr_std
+    xl_train, xr_train = xl_train[..., np.newaxis], xr_train[..., np.newaxis]
+    xl_valid, xr_valid = xl_valid[..., np.newaxis], xr_valid[..., np.newaxis]
+    xl_test, xr_test = xl_test[..., np.newaxis], xr_test[..., np.newaxis]
 
     if not os.path.exists(NUM_PATH):
-        nums = [{'mean': x_mean.tolist(), 'std': x_std.tolist()}]
+        nums = {
+            'l_mean': xl_mean.tolist(),
+            'l_std': xl_std.tolist(),
+            'r_mean': xr_mean.tolist(),
+            'r_std': xr_std.tolist(),
+        }
         with open(NUM_PATH, 'xt', encoding='utf-8', newline='\n') as f:
-            pd.DataFrame(nums).to_csv(f, index=False, line_terminator='\n')
+            pd.DataFrame([nums]).to_csv(f, index=False, line_terminator='\n')
 
-    return (x_train, y_train), (x_valid, y_valid), (x_test, y_test)
+    return ((xl_train, yl_train), (xl_valid, yl_valid), (xl_test, yl_test)), \
+           ((xr_train, yr_train), (xr_valid, yr_valid), (xr_test, yr_test))
 
 
 def train():
-    full = load()
-    (x_train, y_train), (x_valid, y_valid), (x_test, y_test) = full[0], full[1], full[2]
+    l_full, r_full = load()
+    (xl_train, yl_train), (xl_valid, yl_valid), (xl_test, yl_test) = l_full[0], l_full[1], l_full[2]
+    (xr_train, yr_train), (xr_valid, yr_valid), (xr_test, yr_test) = r_full[0], r_full[1], r_full[2]
 
-    if os.path.exists(MODEL_PATH):
-        model = keras.models.load_model(MODEL_PATH)
-        print(model.evaluate(x_test, y_test))
+    if os.path.exists(LEFT_PATH) and os.path.exists(RIGHT_PATH):
+        l_model = keras.models.load_model(LEFT_PATH)
+        r_model = keras.models.load_model(RIGHT_PATH)
+        print(l_model.evaluate(xl_test, yl_test))
+        print(r_model.evaluate(xr_test, yr_test))
         return
 
-    model = keras.models.Sequential([
-        keras.layers.Conv2D(128, 24, activation='relu', padding='same', input_shape=[70, 200, 1]),
+    l_model = keras.models.Sequential([
+        keras.layers.Conv2D(128, 24, activation='relu', padding='same', input_shape=[70, 100, 1]),
         keras.layers.MaxPooling2D(2),
         keras.layers.Conv2D(256, 12, activation='relu', padding='same'),
         keras.layers.Conv2D(256, 12, activation='relu', padding='same'),
@@ -80,12 +113,19 @@ def train():
         keras.layers.Dropout(0.5),
         keras.layers.Dense(128, activation='relu'),
         keras.layers.Dropout(0.5),
-        keras.layers.Dense(100, activation='softmax')
+        keras.layers.Dense(10, activation='softmax')
     ])
-    model.compile(loss='sparse_categorical_crossentropy', optimizer='sgd', metrics=['accuracy'])
-    model.fit(x_train, y_train, epochs=10, validation_data=(x_valid, y_valid))
-    model.save(MODEL_PATH)
-    print(model.evaluate(x_test, y_test))
+    r_model = keras.models.clone_model(l_model)
+
+    l_model.compile(loss='sparse_categorical_crossentropy', optimizer='sgd', metrics=['accuracy'])
+    l_model.fit(xl_train, yl_train, epochs=10, validation_data=(xl_valid, yl_valid))
+    l_model.save(LEFT_PATH)
+    r_model.compile(loss='sparse_categorical_crossentropy', optimizer='sgd', metrics=['accuracy'])
+    r_model.fit(xr_train, yr_train, epochs=10, validation_data=(xr_valid, yr_valid))
+    r_model.save(RIGHT_PATH)
+
+    print(l_model.evaluate(xl_test, yl_test))
+    print(r_model.evaluate(xr_test, yr_test))
 
 
 if __name__ == '__main__':
