@@ -4,13 +4,18 @@ import logging
 import os
 import time
 
-import cv2
-import keras
-import numpy as np
-import pandas as pd
-import requests
-import yaml
-from bs4 import BeautifulSoup
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
+try:
+    import cv2
+    import keras
+    import numpy as np
+    import pandas as pd
+    import requests
+    import yaml
+    from bs4 import BeautifulSoup
+except Exception as e:
+    raise e
 
 CONF_PATH = 'config.yml'
 LEFT_PATH = 'data/left.h5'
