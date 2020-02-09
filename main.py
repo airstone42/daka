@@ -32,6 +32,9 @@ xl_mean, xr_mean = np.array(ast.literal_eval(df['l_mean'][0])), np.array(ast.lit
 xl_std, xr_std = np.array(ast.literal_eval(df['l_std'][0])), np.array(ast.literal_eval(df['r_std'][0]))
 l_model, r_model = keras.models.load_model(LEFT_PATH), keras.models.load_model(RIGHT_PATH)
 
+headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
+                         'Chrome/80.0.3987.87 Safari/537.36'}
+
 
 def recognize(img) -> str:
     _, width = img.shape
@@ -46,7 +49,7 @@ def recognize(img) -> str:
 
 def login(s: requests.Session, r: requests.Response, config: dict) -> (bool, requests.Response):
     soup = BeautifulSoup(r.content, 'lxml')
-    captcha = s.get(CAPTCHA_URL)
+    captcha = s.get(CAPTCHA_URL, headers=headers)
 
     array = np.frombuffer(captcha.content, np.uint8)
     img = cv2.imdecode(array, cv2.IMREAD_GRAYSCALE)
@@ -61,7 +64,7 @@ def login(s: requests.Session, r: requests.Response, config: dict) -> (bool, req
         'geolocation': '',
     }
 
-    post = s.post(r.url, data=data)
+    post = s.post(r.url, data=data, headers=headers)
     soup = BeautifulSoup(post.content, 'lxml')
     logging.info('Login...')
     return (False, post) if soup.find('div', attrs={'class': 'alert alert-danger'}) else (True, post)
@@ -82,11 +85,13 @@ def checkin(s: requests.Session, r: requests.Response, config: dict) -> bool:
     if not flag:
         data = {
             'xgh': config['id'],
+            'lon': '',
+            'lat': '',
             'region': config['region'],
             'rylx': config['contacted'],
             'status': config['health'],
         }
-        post = s.post(CHECKIN_URL, data=data)
+        post = s.post(CHECKIN_URL, data=data, headers=headers)
         logging.info('Checkin...')
         soup = BeautifulSoup(post.content, 'lxml')
         if 'Health report already submitted' in str(soup.find('div', attrs={'class': 'form-group'})):
@@ -109,7 +114,7 @@ def main():
     error_count = 0
 
     s = requests.Session()
-    r = s.get(DK_URL)
+    r = s.get(DK_URL, headers=headers)
 
     if CAS_URL in r.url:
         result, r = login(s, r, config)
