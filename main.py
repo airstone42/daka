@@ -85,8 +85,8 @@ def checkin(s: requests.Session, r: requests.Response, config: dict) -> bool:
     if not flag:
         data = {
             'xgh': config['id'],
-            'lon': '',
-            'lat': '',
+            'lon': config['longitude'],
+            'lat': config['latitude'],
             'region': config['region'],
             'rylx': config['contacted'],
             'status': config['health'],
