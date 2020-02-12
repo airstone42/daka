@@ -1,7 +1,19 @@
 id: "200000000000"
 password: "00000000"
-region: 1
-contacted: 4
-health: 0
-longitude: "121.911200"
-latitude: "30.881100"
+
+# 打卡
+checkin:
+  region: 1
+  contacted: 4
+  health: 0
+  longitude: "121.911200"
+  latitude: "30.881100"
+
+# 返沪情况
+arrsh:
+  alwaysinsh: 1
+  departure: ''
+  from: ''
+  to: ''
+  transportation: ''
+  remark: ''

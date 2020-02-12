@@ -26,6 +26,7 @@ DK_URL = 'https://dk.shmtu.edu.cn/'
 CAS_URL = 'https://cas.shmtu.edu.cn/'
 CAPTCHA_URL = CAS_URL + 'cas/captcha'
 CHECKIN_URL = DK_URL + 'checkin'
+ARRIVAL_URL = DK_URL + 'arrsh'
 
 df = pd.read_csv(NUM_PATH)
 xl_mean, xr_mean = np.array(ast.literal_eval(df['l_mean'][0])), np.array(ast.literal_eval(df['r_mean'][0]))
@@ -85,11 +86,11 @@ def checkin(s: requests.Session, r: requests.Response, config: dict) -> bool:
     if not flag:
         data = {
             'xgh': config['id'],
-            'lon': config['longitude'],
-            'lat': config['latitude'],
-            'region': config['region'],
-            'rylx': config['contacted'],
-            'status': config['health'],
+            'lon': config['checkin']['longitude'],
+            'lat': config['checkin']['latitude'],
+            'region': config['checkin']['region'],
+            'rylx': config['checkin']['contacted'],
+            'status': config['checkin']['health'],
         }
         post = s.post(CHECKIN_URL, data=data, headers=headers)
         logging.info('Checkin...')
@@ -98,8 +99,35 @@ def checkin(s: requests.Session, r: requests.Response, config: dict) -> bool:
             flag = True
     if flag:
         logging.info('Checkin successful!')
+    else:
+        logging.warning('Checkin failed!')
 
     return flag
+
+
+def arrsh(s: requests.Session, config: dict) -> bool:
+    r = s.get(ARRIVAL_URL, headers=headers)
+    if r.url != ARRIVAL_URL:
+        return False
+
+    data = {
+        'xgh': config['id'],
+        'alwaysinsh': config['arrsh']['stay'],
+        'fromaddr': config['arrsh']['departure'],
+        'fromtime': config['arrsh']['begin'],
+        'totime': config['arrsh']['end'],
+        'jtgj': config['arrsh']['transportation'],
+        'status': config['checkin']['health'],
+        'remark': config['arrsh']['remark']
+    }
+    post = s.post(ARRIVAL_URL, data=data, headers=headers)
+    logging.info('ARRSH...')
+    if post.url == DK_URL:
+        logging.info('ARRSH successful!')
+        return True
+    else:
+        logging.warning('ARRSH failed!')
+        return False
 
 
 def main():
@@ -127,6 +155,9 @@ def main():
 
     while not checkin(s, r, config) and error_count < 5:
         if checkin(s, r, config):
+            while not arrsh(s, config) and error_count < 5:
+                if arrsh(s, config):
+                    break
             break
         error_count += 1
         time.sleep(5)
