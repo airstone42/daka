@@ -9,4 +9,4 @@ target
 config.yml
 
 !/cage/images/.gitkeep
-!/data/.gitkeep
+!/data/example.jpg

@@ -1,8 +1,10 @@
 # Daka
 
+**【已废弃】因目标网站更换验证码库，此项目的自动打卡登录功能已不再有效。**
+
 一个用于自动登录、每日打卡的简单工具。使用 CNN 训练模型，自动识别登录页的验证码。
 
-![](https://cas.shmtu.edu.cn/cas/captcha)
+![](data/example.jpg)
 
 ## Dependencies
 
